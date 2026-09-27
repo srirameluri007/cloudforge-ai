@@ -55,7 +55,7 @@ CloudForge AI is a monorepo with three runtime services:
   with `response_format: {"type": "json_object"}`, 90s timeout, sanitized error mapping,
   and Pydantic validation before persistence. API keys stay server-side.
 
-Switching is a single env var: `AI_PROVIDER=demo|azure_openai`.
+Switching is a single env var: `AI_PROVIDER=demo|azure_openai|openai`.
 
 ## Data model
 

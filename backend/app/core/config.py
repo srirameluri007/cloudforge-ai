@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,14 +24,32 @@ class Settings(BaseSettings):
     )
     JWT_SECRET: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    AI_PROVIDER: Literal["demo", "azure_openai"] = "demo"
+    AI_PROVIDER: Literal["demo", "azure_openai", "openai"] = "demo"
     AZURE_OPENAI_ENDPOINT: str = ""
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_DEPLOYMENT: str = ""
     AZURE_OPENAI_API_VERSION: str = "2024-12-01-preview"
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
     LOG_LEVEL: str = "INFO"
     SEED_DEMO: bool = False
     COOKIE_SECURE: bool = False
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: object) -> object:
+        """Rewrite Render-style DB URL schemes to SQLAlchemy's explicit dialect.
+
+        Render's ``connectionString`` uses ``postgres://``; SQLAlchemy 2.x with
+        the installed psycopg v3 driver needs ``postgresql+psycopg://``.
+        SQLite URLs (and anything else) pass through untouched.
+        """
+        if isinstance(value, str):
+            if value.startswith("postgres://"):
+                return "postgresql+psycopg://" + value[len("postgres://") :]
+            if value.startswith("postgresql://"):
+                return "postgresql+psycopg://" + value[len("postgresql://") :]
+        return value
 
 
 @lru_cache

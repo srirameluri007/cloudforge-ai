@@ -3,14 +3,17 @@ import type { ApiErrorBody } from "./types";
 /**
  * Typed fetch client for the CloudForge AI backend.
  *
- * Base URL comes from NEXT_PUBLIC_API_URL (default http://localhost:8000).
+ * Base URL comes from NEXT_PUBLIC_API_URL. An empty string means relative
+ * URLs (production: the browser calls /api/* on the frontend origin and the
+ * Next.js rewrite proxy forwards them to the backend server-side). Unset
+ * defaults to http://localhost:8000 (local development).
  * Every request is sent with credentials: "include" — session cookies are
  * HttpOnly, so the frontend never touches tokens.
  */
 
-export const API_BASE: string =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
-  "http://localhost:8000";
+const envBase =
+  typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : undefined;
+export const API_BASE: string = envBase ?? "http://localhost:8000";
 
 export class ApiError extends Error {
   code: string;

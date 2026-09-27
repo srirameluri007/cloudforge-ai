@@ -26,6 +26,7 @@ from app.models.project import Project
 from app.providers.azure_openai import AzureOpenAIProvider
 from app.providers.base import AIProvider, ProviderError
 from app.providers.demo import DemoProvider
+from app.providers.openai import OpenAIProvider
 from app.providers.schemas import GenerationRequest, StructuredGenerationResult
 from app.services import security_rules, zerotrust
 
@@ -39,6 +40,11 @@ def get_provider(settings: Settings) -> AIProvider:
             api_key=settings.AZURE_OPENAI_API_KEY,
             deployment=settings.AZURE_OPENAI_DEPLOYMENT,
             api_version=settings.AZURE_OPENAI_API_VERSION,
+        )
+    if settings.AI_PROVIDER == "openai":
+        return OpenAIProvider(
+            api_key=settings.OPENAI_API_KEY,
+            model=settings.OPENAI_MODEL,
         )
     return DemoProvider()
 

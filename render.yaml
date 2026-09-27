@@ -1,0 +1,54 @@
+# Render Blueprint for CloudForge AI production.
+# Apply via Render dashboard: New -> Blueprint -> select this repo.
+# After apply, set OPENAI_API_KEY manually on the cloudforge-ai-api service.
+databases:
+  - name: cloudforge-ai-db
+    plan: starter
+    databaseName: cloudforge
+    user: cloudforge
+
+services:
+  - type: web
+    name: cloudforge-ai-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cloudforge-ai-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://cloudforge-ai-web.onrender.com
+      - key: BACKEND_URL
+        value: https://cloudforge-ai-api.onrender.com
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: COOKIE_SECURE
+        value: true
+      - key: LOG_LEVEL
+        value: INFO
+
+  - type: web
+    name: cloudforge-ai-web
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    healthCheckPath: /
+    envVars:
+      # NEXT_PUBLIC_API_URL intentionally unset: the Dockerfile default ("")
+      # makes the browser call /api relatively, and next.config.js rewrites
+      # proxy /api/* to BACKEND_INTERNAL_URL server-side (same-origin cookies).
+      - key: BACKEND_INTERNAL_URL
+        value: https://cloudforge-ai-api.onrender.com

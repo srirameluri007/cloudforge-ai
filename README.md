@@ -70,7 +70,7 @@ Then open:
 **Demo credentials** (seeded automatically in demo mode): `demo@example.com` / `DemoPass123!`
 
 For a non-demo compose stack: `docker compose up --build` (reads `.env`; set `AI_PROVIDER=azure_openai`
-plus `AZURE_OPENAI_*` for live generation).
+plus `AZURE_OPENAI_*`, or `AI_PROVIDER=openai` plus `OPENAI_API_KEY`, for live generation).
 
 ## Native development (no Docker)
 
@@ -111,9 +111,12 @@ npm run dev   # http://localhost:3000 (expects API at NEXT_PUBLIC_API_URL, defau
 |---|---|
 | `AI_PROVIDER=demo` | Deterministic local provider. No network, no key. All outputs are clearly labeled demo-generated. |
 | `AI_PROVIDER=azure_openai` | Live generation via Azure OpenAI chat completions (JSON mode, 90s timeout, Pydantic-validated). |
+| `AI_PROVIDER=openai` | Live generation via OpenAI chat completions (JSON mode, 90s timeout, Pydantic-validated). |
 
 Azure OpenAI additionally requires: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`,
-`AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION`. API keys never reach the browser.
+`AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION`. The OpenAI provider
+requires `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-4o-mini`).
+API keys never reach the browser.
 
 ## Environment variables
 
@@ -170,6 +173,30 @@ frontend lint/typecheck/tests/build, compose config validation, image builds, an
 - No direct cloud deployment, credential rotation, SSO, or compliance certification —
   these are future extension points (see [docs/roadmap.md](docs/roadmap.md)).
 - DemoProvider output is illustrative, not production-ready.
+
+## Deploy to production (Render)
+
+Prerequisites: a Render account and an OpenAI API key
+(platform.openai.com → Billing → API keys).
+
+1. In the Render dashboard: **New → Blueprint**, select the `cloudforge-ai` repo
+   (this applies `render.yaml`: managed Postgres + `cloudforge-ai-api` + `cloudforge-ai-web`).
+2. After apply, open the `cloudforge-ai-api` service → Environment → set
+   `OPENAI_API_KEY` manually (it is `sync: false`, so Render will not ask for it
+   during Blueprint apply).
+3. Deploy. The API runs Alembic migrations automatically on boot; `JWT_SECRET`
+   is auto-generated.
+
+Resulting URLs:
+
+| Service | URL |
+|---|---|
+| App | https://cloudforge-ai-web.onrender.com |
+| API | https://cloudforge-ai-api.onrender.com |
+
+The browser talks same-origin to the web service; `/api/*` is proxied server-side
+to the API, so session cookies stay first-party (no CORS issues). Rotate
+`JWT_SECRET` in the Render dashboard if it is ever exposed.
 
 ## Production deployment considerations
 
