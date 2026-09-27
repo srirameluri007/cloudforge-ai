@@ -1,0 +1,12 @@
+# Demo stack: deterministic DemoProvider, seeded demo user, no AI key required.
+#   docker compose -f docker-compose.demo.yml up --build
+# Demo login: demo@cloudforge.local / DemoPass123!
+include:
+  - docker-compose.yml
+
+services:
+  backend:
+    environment:
+      AI_PROVIDER: demo
+      SEED_DEMO: "true"
+      APP_ENV: development
