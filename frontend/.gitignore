@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+dist/
+.env*.local
+npm-debug.log*
+test-results/
+playwright-report/
+*.tsbuildinfo
+next-env.d.ts
+# Generated Monaco bundle (copied from node_modules at install/build time)
+public/monaco/

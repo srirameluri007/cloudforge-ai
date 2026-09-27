@@ -1,12 +1,69 @@
 # Demo stack: deterministic DemoProvider, seeded demo user, no AI key required.
 #   docker compose -f docker-compose.demo.yml up --build
-# Demo login: demo@cloudforge.local / DemoPass123!
-include:
-  - docker-compose.yml
+# Demo login: demo@example.com / DemoPass123!
+#
+# Standalone file (duplicates docker-compose.yml with demo settings baked in).
 
 services:
-  backend:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
+      POSTGRES_USER: cloudforge
+      POSTGRES_PASSWORD: cloudforge
+      POSTGRES_DB: cloudforge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      APP_NAME: CloudForge AI
+      FRONTEND_URL: http://localhost:3000
+      BACKEND_URL: http://localhost:8000
+      DATABASE_URL: postgresql+psycopg://cloudforge:cloudforge@db:5432/cloudforge
+      JWT_SECRET: ${JWT_SECRET:-change-me-generate-a-random-secret}
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
       AI_PROVIDER: demo
       SEED_DEMO: "true"
-      APP_ENV: development
+      COOKIE_SECURE: "false"
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+
+volumes:
+  pgdata:
